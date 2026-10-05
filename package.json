@@ -11,6 +11,7 @@
     "./crop": "./src/crop.ts",
     "./metadata": "./src/metadata.ts",
     "./raster": "./src/raster.ts",
+    "./resize": "./src/resize.ts",
     "./text": "./src/text.ts"
   },
   "scripts": {
