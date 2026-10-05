@@ -6,7 +6,7 @@ import { createCanvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
 import { PDFDocument, rgb } from "pdf-lib";
 
 import { protectPdf } from "./index.ts";
-import { rasterizePdf, zipNamed, type RasterTarget } from "./raster.ts";
+import { browserRasterTarget, rasterizePdf, zipNamed, type RasterTarget } from "./raster.ts";
 
 if (!globalThis.DOMMatrix) globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix;
 if (!globalThis.ImageData) globalThis.ImageData = ImageData as unknown as typeof globalThis.ImageData;
@@ -75,6 +75,31 @@ describe("rasterizePdf", () => {
 
   it("refuses an empty file", async () => {
     await assert.rejects(() => rasterizePdf(new Uint8Array(), "png", nodeTarget), /could not be read/);
+  });
+});
+
+describe("browserRasterTarget", () => {
+  it("refuses to rasterize outside the browser", () => {
+    assert.equal(typeof document, "undefined");
+    assert.throws(() => browserRasterTarget(10, 10), /Rasterizing runs in the browser\./);
+  });
+
+  it("refuses when the browser cannot draw the page", () => {
+    const previous = globalThis.document;
+    globalThis.document = {
+      createElement() {
+        return { width: 0, height: 0, getContext: () => null };
+      },
+    } as unknown as Document;
+    try {
+      assert.throws(() => browserRasterTarget(8, 8), /This browser cannot draw the page\./);
+    } finally {
+      if (previous === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previous;
+      }
+    }
   });
 });
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { createCanvas } from "@napi-rs/canvas";
 import {
   PDFArray,
   PDFDocument,
@@ -14,6 +15,7 @@ import {
   compressPdf,
   deletePdfPages,
   extractPdfRanges,
+  imagesToPdf,
   mergePdfs,
   organizePdf,
   pageCount,
@@ -278,5 +280,44 @@ describe("workers", () => {
     const doc = await PDFDocument.create();
     const input = await doc.save({ addDefaultPage: false });
     await assert.rejects(() => addWatermark(input, "NORTH"), /This PDF has no pages\./);
+  });
+});
+
+function imageBytes(kind: "jpg" | "png", width: number, height: number): Uint8Array {
+  const canvas = createCanvas(width, height);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#2244aa";
+  context.fillRect(0, 0, width, height);
+  return new Uint8Array(canvas.toBuffer(kind === "jpg" ? "image/jpeg" : "image/png"));
+}
+
+describe("imagesToPdf", () => {
+  it("places one JPEG on a page of the same size", async () => {
+    const out = await imagesToPdf([{ bytes: imageBytes("jpg", 40, 20), kind: "jpg" }]);
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPageCount(), 1);
+    assert.equal(doc.getPage(0).getWidth(), 40);
+    assert.equal(doc.getPage(0).getHeight(), 20);
+  });
+
+  it("places a PNG after a JPEG", async () => {
+    const out = await imagesToPdf([
+      { bytes: imageBytes("jpg", 30, 10), kind: "jpg" },
+      { bytes: imageBytes("png", 12, 18), kind: "png" },
+    ]);
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPageCount(), 2);
+    assert.equal(doc.getPage(0).getWidth(), 30);
+    assert.equal(doc.getPage(0).getHeight(), 10);
+    assert.equal(doc.getPage(1).getWidth(), 12);
+    assert.equal(doc.getPage(1).getHeight(), 18);
+  });
+
+  it("refuses an empty list", async () => {
+    await assert.rejects(() => imagesToPdf([]), /Add at least one image\./);
+  });
+
+  it("refuses bytes that are not an image", async () => {
+    await assert.rejects(() => imagesToPdf([{ bytes: new Uint8Array([1, 2, 3]), kind: "png" }]));
   });
 });
