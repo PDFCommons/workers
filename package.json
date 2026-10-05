@@ -20,6 +20,7 @@
     "./annotations": "./src/annotations.ts",
     "./duplicate": "./src/duplicate.ts",
     "./odd-even": "./src/odd-even.ts"
+    "./interleave": "./src/interleave.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
