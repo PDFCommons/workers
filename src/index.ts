@@ -1,3 +1,4 @@
+import createQpdf from "@neslinesli93/qpdf-wasm";
 import { PDFDocument, degrees, type PDFImage } from "pdf-lib";
 
 export type ImageKind = "jpg" | "png";
@@ -118,4 +119,119 @@ export async function compressPdf(input: Uint8Array): Promise<Uint8Array> {
 export async function pageCount(input: Uint8Array): Promise<number> {
   const doc = await load(input);
   return doc.getPageCount();
+}
+
+type QpdfFs = {
+  writeFile: (path: string, data: Uint8Array | string) => void;
+  readFile: (path: string) => Uint8Array;
+  unlink: (path: string) => void;
+};
+
+type QpdfModule = {
+  callMain: (args: string[]) => number;
+  FS: QpdfFs;
+};
+
+// The published glue loads qpdf.wasm from locateFile. Node reads that path
+// from disk. The browser bundle fetches the same file as a Vite asset.
+const wasmHref = new URL(
+  "../node_modules/@neslinesli93/qpdf-wasm/dist/qpdf.wasm",
+  import.meta.url,
+).href;
+
+const createQpdfModule = createQpdf as unknown as (options: {
+  locateFile: () => string;
+}) => Promise<QpdfModule>;
+
+let modulePromise: Promise<QpdfModule> | undefined;
+let queue: Promise<unknown> = Promise.resolve();
+
+function loadQpdf(): Promise<QpdfModule> {
+  modulePromise ??= createQpdfModule({ locateFile: () => wasmHref });
+  return modulePromise;
+}
+
+function exclusive<T>(run: () => Promise<T>): Promise<T> {
+  const next = queue.then(run, run);
+  queue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
+
+function requirePassword(password: string, message: string): string {
+  if (typeof password !== "string" || password.length === 0) {
+    throw new Error(message);
+  }
+  return password;
+}
+
+// Job JSON so a password that starts with "-" is not parsed as a flag.
+async function runJob(
+  bytes: Uint8Array,
+  job: Record<string, unknown>,
+  failure: string,
+): Promise<Uint8Array> {
+  return exclusive(async () => {
+    const qpdf = await loadQpdf();
+    const id = crypto.randomUUID();
+    const input = `/in-${id}.pdf`;
+    const output = `/out-${id}.pdf`;
+    const spec = `/job-${id}.json`;
+    try {
+      qpdf.FS.writeFile(input, bytes);
+      qpdf.FS.writeFile(
+        spec,
+        JSON.stringify({ ...job, inputFile: input, outputFile: output }),
+      );
+      let code = 1;
+      try {
+        code = qpdf.callMain([`--job-json-file=${spec}`]);
+      } catch {
+        code = 1;
+      } finally {
+        // qpdf's Node quit hook leaves a failing status on the process.
+        if (typeof process !== "undefined") process.exitCode = undefined;
+      }
+      if (code !== 0) throw new Error(failure);
+      // readFile views wasm memory that the next call can reuse.
+      return new Uint8Array(qpdf.FS.readFile(output));
+    } finally {
+      for (const path of [input, output, spec]) {
+        try {
+          qpdf.FS.unlink(path);
+        } catch {
+          // The file is absent when qpdf fails before writing it.
+        }
+      }
+    }
+  });
+}
+
+export async function protectPdf(bytes: Uint8Array, password: string): Promise<Uint8Array> {
+  const chosen = requirePassword(password, "Choose a password.");
+  return runJob(
+    bytes,
+    {
+      encrypt: {
+        userPassword: chosen,
+        ownerPassword: chosen,
+        "256bit": {},
+      },
+    },
+    "Could not protect this PDF.",
+  );
+}
+
+export async function unlockPdf(bytes: Uint8Array, password: string): Promise<Uint8Array> {
+  const known = requirePassword(password, "Enter the password you already know.");
+  return runJob(
+    bytes,
+    {
+      password: known,
+      decrypt: "",
+    },
+    "That password did not open this PDF.",
+  );
 }

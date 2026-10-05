@@ -6,9 +6,11 @@ import {
   deletePdfPages,
   mergePdfs,
   pageCount,
+  protectPdf,
   reorderPdf,
   rotatePdf,
   splitPdf,
+  unlockPdf,
 } from "./index.ts";
 
 async function blank(pages: number): Promise<Uint8Array> {
@@ -57,5 +59,27 @@ describe("workers", () => {
   it("compress returns a pdf", async () => {
     const out = await compressPdf(await blank(1));
     assert.equal(await pageCount(out), 1);
+  });
+
+  it("protects with a password and unlocks back to a pdf-lib document", async () => {
+    const input = await blank(2);
+    const password = "--secret";
+    const protectedBytes = await protectPdf(input, password);
+    assert.equal(Buffer.from(protectedBytes).equals(Buffer.from(input)), false);
+    await assert.rejects(() => PDFDocument.load(protectedBytes), /encrypted/);
+    const unlocked = await unlockPdf(protectedBytes, password);
+    const doc = await PDFDocument.load(unlocked);
+    assert.equal(doc.getPageCount(), 2);
+  });
+
+  it("refuses to protect or unlock without a password", async () => {
+    const input = await blank(1);
+    await assert.rejects(() => protectPdf(input, ""), /Choose a password/);
+    await assert.rejects(() => unlockPdf(input, ""), /password you already know/);
+  });
+
+  it("does not unlock when the password is wrong", async () => {
+    const protectedBytes = await protectPdf(await blank(1), "right");
+    await assert.rejects(() => unlockPdf(protectedBytes, "wrong"), /did not open/);
   });
 });
