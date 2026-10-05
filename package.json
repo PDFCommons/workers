@@ -33,7 +33,8 @@
     "./resize-legal": "./src/resize-legal.ts",
     "./set-title": "./src/set-title.ts",
     "./links": "./src/links.ts",
-    "./split-every": "./src/split-every.ts"
+    "./split-every": "./src/split-every.ts",
+    "./drop-last": "./src/drop-last.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
