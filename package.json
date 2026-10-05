@@ -23,7 +23,8 @@
     "./info": "./src/info.ts",
     "./interleave": "./src/interleave.ts",
     "./four-up": "./src/four-up.ts",
-    "./booklet": "./src/booklet.ts"
+    "./booklet": "./src/booklet.ts",
+    "./orient": "./src/orient.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
