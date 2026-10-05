@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 import {
   compressPdf,
   deletePdfPages,
   mergePdfs,
+  organizePdf,
   pageCount,
   protectPdf,
   reorderPdf,
   rotatePdf,
+  rotatePdfPages,
   splitPdf,
   unlockPdf,
 } from "./index.ts";
@@ -41,6 +43,29 @@ describe("workers", () => {
     assert.equal(doc.getPage(0).getRotation().angle, 90);
   });
 
+  it("rotates each page by its own angle", async () => {
+    const src = await PDFDocument.create();
+    const first = src.addPage([100, 40]);
+    first.setRotation(degrees(90));
+    src.addPage([200, 40]);
+    src.addPage([300, 40]);
+    const out = await rotatePdfPages(await src.save(), [90, 270, 0]);
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPage(0).getRotation().angle, 180);
+    assert.equal(doc.getPage(1).getRotation().angle, 270);
+    assert.equal(doc.getPage(2).getRotation().angle, 0);
+  });
+
+  it("refuses a rotation for the wrong number of pages", async () => {
+    const input = await blank(2);
+    await assert.rejects(() => rotatePdfPages(input, [90]), /every page/);
+  });
+
+  it("refuses a rotation that is not a quarter turn", async () => {
+    const input = await blank(1);
+    await assert.rejects(() => rotatePdfPages(input, [45 as 0]), /0, 90, 180, or 270/);
+  });
+
   it("deletes a page and keeps the rest", async () => {
     const out = await deletePdfPages(await blank(3), [2]);
     assert.equal(await pageCount(out), 2);
@@ -54,6 +79,57 @@ describe("workers", () => {
     const doc = await PDFDocument.load(out);
     assert.equal(doc.getPage(0).getWidth(), 200);
     assert.equal(doc.getPage(1).getWidth(), 100);
+  });
+
+  it("deletes, reorders, then rotates the pages that remain", async () => {
+    const src = await PDFDocument.create();
+    const first = src.addPage([100, 40]);
+    first.setRotation(degrees(90));
+    src.addPage([200, 40]);
+    src.addPage([300, 40]);
+    const out = await organizePdf(await src.save(), [
+      { page: 3, rotation: 180 },
+      { page: 1, rotation: 90 },
+    ]);
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPageCount(), 2);
+    assert.equal(doc.getPage(0).getWidth(), 300);
+    assert.equal(doc.getPage(0).getRotation().angle, 180);
+    assert.equal(doc.getPage(1).getWidth(), 100);
+    assert.equal(doc.getPage(1).getRotation().angle, 180);
+  });
+
+  it("leaves every page when nothing changes", async () => {
+    const out = await organizePdf(await blank(2), [
+      { page: 1, rotation: 0 },
+      { page: 2, rotation: 0 },
+    ]);
+    assert.equal(await pageCount(out), 2);
+  });
+
+  it("refuses to delete every page", async () => {
+    const input = await blank(2);
+    await assert.rejects(() => organizePdf(input, []), /at least one page/);
+  });
+
+  it("refuses a page that is not in the file", async () => {
+    const input = await blank(1);
+    await assert.rejects(
+      () => organizePdf(input, [{ page: 2, rotation: 0 }]),
+      /Name a page that exists/,
+    );
+  });
+
+  it("refuses to list a page twice", async () => {
+    const input = await blank(2);
+    await assert.rejects(
+      () =>
+        organizePdf(input, [
+          { page: 1, rotation: 0 },
+          { page: 1, rotation: 90 },
+        ]),
+      /every page once/,
+    );
   });
 
   it("compress returns a pdf", async () => {

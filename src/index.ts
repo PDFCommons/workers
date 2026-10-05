@@ -34,6 +34,20 @@ export async function splitPdf(input: Uint8Array): Promise<Uint8Array[]> {
   return parts;
 }
 
+export type QuarterTurn = 0 | 90 | 180 | 270;
+
+function isQuarterTurn(value: number): value is QuarterTurn {
+  return value === 0 || value === 90 || value === 180 || value === 270;
+}
+
+function turned(current: number, rotation: QuarterTurn): QuarterTurn {
+  const next = ((current + rotation) % 360 + 360) % 360;
+  if (!isQuarterTurn(next)) {
+    throw new Error("Rotation must be 0, 90, 180, or 270 degrees.");
+  }
+  return next;
+}
+
 export async function rotatePdf(
   input: Uint8Array,
   rotation: 90 | 180 | 270,
@@ -43,6 +57,26 @@ export async function rotatePdf(
     const current = page.getRotation().angle;
     page.setRotation(degrees((current + rotation) % 360));
   }
+  return doc.save();
+}
+
+export async function rotatePdfPages(
+  input: Uint8Array,
+  rotations: readonly QuarterTurn[],
+): Promise<Uint8Array> {
+  const doc = await load(input);
+  const pdfPages = doc.getPages();
+  if (rotations.length !== pdfPages.length) {
+    throw new Error("Name a rotation for every page.");
+  }
+  pdfPages.forEach((page, index) => {
+    const rotation = rotations[index];
+    if (rotation === undefined || !isQuarterTurn(rotation)) {
+      throw new Error("Rotation must be 0, 90, 180, or 270 degrees.");
+    }
+    if (rotation === 0) return;
+    page.setRotation(degrees(turned(page.getRotation().angle, rotation)));
+  });
   return doc.save();
 }
 
@@ -81,6 +115,52 @@ export async function reorderPdf(
   );
   for (const page of pages) out.addPage(page);
   return out.save();
+}
+
+/** Keeps `pages` in that order. A page left out is deleted. */
+export async function organizePdf(
+  input: Uint8Array,
+  pages: readonly { page: number; rotation: QuarterTurn }[],
+): Promise<Uint8Array> {
+  if (pages.length === 0) throw new Error("A PDF needs at least one page.");
+  const total = await pageCount(input);
+  const kept: { page: number; rotation: QuarterTurn }[] = [];
+  const seen = new Set<number>();
+  for (const entry of pages) {
+    if (!Number.isInteger(entry.page) || entry.page < 1 || entry.page > total) {
+      throw new Error("Name a page that exists.");
+    }
+    if (!isQuarterTurn(entry.rotation)) {
+      throw new Error("Rotation must be 0, 90, 180, or 270 degrees.");
+    }
+    if (seen.has(entry.page)) {
+      throw new Error("The new order has to list every page once.");
+    }
+    seen.add(entry.page);
+    kept.push({ page: entry.page, rotation: entry.rotation });
+  }
+  const deleted: number[] = [];
+  for (let page = 1; page <= total; page += 1) {
+    if (!seen.has(page)) deleted.push(page);
+  }
+  // Delete and reorder first so each rotation applies to a page in the result.
+  let current = input;
+  if (deleted.length > 0) current = await deletePdfPages(current, deleted);
+  const survivors = [...seen].sort((left, right) => left - right);
+  const renumber = new Map(survivors.map((page, index) => [page, index + 1]));
+  const order = kept.map((entry) => {
+    const page = renumber.get(entry.page);
+    if (page === undefined) throw new Error("Name a page that exists.");
+    return page;
+  });
+  if (order.some((page, index) => page !== index + 1)) {
+    current = await reorderPdf(current, order);
+  }
+  const rotations = kept.map((entry) => entry.rotation);
+  if (rotations.some((rotation) => rotation !== 0)) {
+    current = await rotatePdfPages(current, rotations);
+  }
+  return current;
 }
 
 export async function imagesToPdf(
