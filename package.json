@@ -22,6 +22,7 @@
     "./odd-even": "./src/odd-even.ts",
     "./info": "./src/info.ts",
     "./interleave": "./src/interleave.ts"
+    "./four-up": "./src/four-up.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
