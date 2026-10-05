@@ -1,0 +1,17 @@
+{
+  "name": "@pdfcommons/workers",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "description": "In-browser PDF tools. Files stay in the tab. This package does not upload.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test src/*.test.ts"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}
