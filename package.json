@@ -35,7 +35,8 @@
     "./links": "./src/links.ts",
     "./split-every": "./src/split-every.ts",
     "./drop-last": "./src/drop-last.ts",
-    "./keep-first-last": "./src/keep-first-last.ts"
+    "./keep-first-last": "./src/keep-first-last.ts",
+    "./swap": "./src/swap.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
