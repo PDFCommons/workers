@@ -19,7 +19,8 @@
     "./scale": "./src/scale.ts",
     "./annotations": "./src/annotations.ts",
     "./duplicate": "./src/duplicate.ts",
-    "./odd-even": "./src/odd-even.ts"
+    "./odd-even": "./src/odd-even.ts",
+    "./info": "./src/info.ts",
     "./interleave": "./src/interleave.ts"
   },
   "scripts": {
