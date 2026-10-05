@@ -26,7 +26,8 @@
     "./booklet": "./src/booklet.ts",
     "./orient": "./src/orient.ts",
     "./delete-page": "./src/delete-page.ts",
-    "./bookmarks": "./src/bookmarks.ts"
+    "./bookmarks": "./src/bookmarks.ts",
+    "./keep-range": "./src/keep-range.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
