@@ -28,7 +28,8 @@
     "./delete-page": "./src/delete-page.ts",
     "./bookmarks": "./src/bookmarks.ts",
     "./keep-range": "./src/keep-range.ts",
-    "./rotate90": "./src/rotate90.ts"
+    "./rotate90": "./src/rotate90.ts",
+    "./page-x-of-y": "./src/page-x-of-y.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
