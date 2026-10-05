@@ -31,7 +31,8 @@
     "./rotate90": "./src/rotate90.ts",
     "./page-x-of-y": "./src/page-x-of-y.ts",
     "./resize-legal": "./src/resize-legal.ts",
-    "./set-title": "./src/set-title.ts"
+    "./set-title": "./src/set-title.ts",
+    "./links": "./src/links.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
