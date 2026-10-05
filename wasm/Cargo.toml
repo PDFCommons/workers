@@ -1,0 +1,13 @@
+[package]
+name = "pdfcommons-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+lopdf = "0.36"
