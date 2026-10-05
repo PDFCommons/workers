@@ -38,7 +38,8 @@
     "./keep-first-last": "./src/keep-first-last.ts",
     "./swap": "./src/swap.ts",
     "./blank-every": "./src/blank-every.ts",
-    "./one-page": "./src/one-page.ts"
+    "./one-page": "./src/one-page.ts",
+    "./core": "./src/core/pdf.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"

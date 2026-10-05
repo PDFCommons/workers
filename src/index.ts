@@ -1,4 +1,5 @@
 import createQpdf from "@neslinesli93/qpdf-wasm";
+import { countPages } from "./core/pdf.ts";
 import {
   PDFContentStream,
   PDFDocument,
@@ -317,8 +318,7 @@ export async function compressPdf(input: Uint8Array): Promise<Uint8Array> {
 }
 
 export async function pageCount(input: Uint8Array): Promise<number> {
-  const doc = await load(input);
-  return doc.getPageCount();
+  return countPages(input);
 }
 
 type QpdfFs = {

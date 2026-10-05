@@ -9,5 +9,4 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
-lopdf = "0.36"
+flate2 = "1"
