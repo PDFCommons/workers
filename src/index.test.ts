@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PDFDocument, degrees } from "pdf-lib";
 import {
+  PDFArray,
+  PDFDocument,
+  PDFRawStream,
+  PDFRef,
+  decodePDFRawStream,
+  degrees,
+} from "pdf-lib";
+import {
+  addPageNumbers,
   compressPdf,
   deletePdfPages,
   extractPdfRanges,
@@ -20,6 +28,19 @@ async function blank(pages: number): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < pages; i++) doc.addPage();
   return doc.save();
+}
+
+function pageStream(doc: PDFDocument, index: number): string {
+  const contents = doc.getPage(index).node.Contents();
+  if (!contents) return "";
+  const parts = contents instanceof PDFArray ? contents.asArray() : [contents];
+  return parts
+    .map((part) => {
+      const stream = part instanceof PDFRef ? doc.context.lookup(part) : part;
+      if (!(stream instanceof PDFRawStream)) return "";
+      return Buffer.from(decodePDFRawStream(stream).decode()).toString("latin1");
+    })
+    .join("");
 }
 
 describe("workers", () => {
@@ -152,6 +173,29 @@ describe("workers", () => {
         ]),
       /every page once/,
     );
+  });
+
+  it("numbers two pages from the given start", async () => {
+    const out = await addPageNumbers(await blank(2), { startAt: 7 });
+    assert.equal(await pageCount(out), 2);
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPageCount(), 2);
+    assert.match(pageStream(doc, 0), /\(7\)/);
+    assert.match(pageStream(doc, 1), /\(8\)/);
+  });
+
+  it("refuses to start page numbers at zero", async () => {
+    const input = await blank(1);
+    await assert.rejects(
+      () => addPageNumbers(input, { startAt: 0 }),
+      /Start at a whole number from 1\./,
+    );
+  });
+
+  it("refuses to number a pdf with no pages", async () => {
+    const doc = await PDFDocument.create();
+    const input = await doc.save({ addDefaultPage: false });
+    await assert.rejects(() => addPageNumbers(input), /This PDF has no pages\./);
   });
 
   it("compress returns a pdf", async () => {

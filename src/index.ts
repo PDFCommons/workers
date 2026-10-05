@@ -1,5 +1,22 @@
 import createQpdf from "@neslinesli93/qpdf-wasm";
-import { PDFDocument, degrees, type PDFImage } from "pdf-lib";
+import {
+  PDFContentStream,
+  PDFDocument,
+  PDFOperator,
+  PDFOperatorNames,
+  PDFString,
+  StandardFonts,
+  beginText,
+  degrees,
+  endText,
+  popGraphicsState,
+  pushGraphicsState,
+  rgb,
+  setFillingColor,
+  setFontAndSize,
+  setTextMatrix,
+  type PDFImage,
+} from "pdf-lib";
 
 export type ImageKind = "jpg" | "png";
 
@@ -192,6 +209,45 @@ export async function organizePdf(
     current = await rotatePdfPages(current, rotations);
   }
   return current;
+}
+
+export async function addPageNumbers(
+  input: Uint8Array,
+  options?: { startAt?: number },
+): Promise<Uint8Array> {
+  const doc = await load(input);
+  const pages = doc.getPages();
+  if (pages.length === 0) throw new Error("This PDF has no pages.");
+  const startAt = options?.startAt ?? 1;
+  if (!Number.isSafeInteger(startAt) || startAt < 1 || startAt > 999999) {
+    throw new Error("Start at a whole number from 1.");
+  }
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const size = 12;
+  pages.forEach((page, index) => {
+    const text = String(startAt + index);
+    const textWidth = font.widthOfTextAtSize(text, size);
+    const x = (page.getWidth() - textWidth) / 2;
+    const y = page.getHeight() < 72 ? 8 : 36;
+    const fontKey = page.node.newFontDictionary("F", font.ref);
+    // pdf-lib's drawText writes a hex operand. A literal string is "(7) Tj".
+    const stream = PDFContentStream.of(
+      doc.context.obj({}),
+      [
+        pushGraphicsState(),
+        beginText(),
+        setFillingColor(rgb(0.11, 0.1, 0.08)),
+        setFontAndSize(fontKey, size),
+        setTextMatrix(1, 0, 0, 1, x, y),
+        PDFOperator.of(PDFOperatorNames.ShowText, [PDFString.of(text)]),
+        endText(),
+        popGraphicsState(),
+      ],
+      false,
+    );
+    page.node.addContentStream(doc.context.register(stream));
+  });
+  return doc.save();
 }
 
 export async function imagesToPdf(
