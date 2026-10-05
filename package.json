@@ -14,7 +14,8 @@
     "./resize": "./src/resize.ts",
     "./text": "./src/text.ts",
     "./two-up": "./src/two-up.ts",
-    "./flatten": "./src/flatten.ts"
+    "./flatten": "./src/flatten.ts",
+    "./reverse": "./src/reverse.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
