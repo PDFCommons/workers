@@ -12,7 +12,8 @@
     "./metadata": "./src/metadata.ts",
     "./raster": "./src/raster.ts",
     "./resize": "./src/resize.ts",
-    "./text": "./src/text.ts"
+    "./text": "./src/text.ts",
+    "./two-up": "./src/two-up.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
