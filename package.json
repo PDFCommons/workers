@@ -21,7 +21,7 @@
     "./duplicate": "./src/duplicate.ts",
     "./odd-even": "./src/odd-even.ts",
     "./info": "./src/info.ts",
-    "./interleave": "./src/interleave.ts"
+    "./interleave": "./src/interleave.ts",
     "./four-up": "./src/four-up.ts"
   },
   "scripts": {
