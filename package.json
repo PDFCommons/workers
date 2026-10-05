@@ -25,7 +25,8 @@
     "./four-up": "./src/four-up.ts",
     "./booklet": "./src/booklet.ts",
     "./orient": "./src/orient.ts",
-    "./delete-page": "./src/delete-page.ts"
+    "./delete-page": "./src/delete-page.ts",
+    "./bookmarks": "./src/bookmarks.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
