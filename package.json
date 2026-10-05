@@ -16,7 +16,8 @@
     "./two-up": "./src/two-up.ts",
     "./flatten": "./src/flatten.ts",
     "./reverse": "./src/reverse.ts",
-    "./scale": "./src/scale.ts"
+    "./scale": "./src/scale.ts",
+    "./annotations": "./src/annotations.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
