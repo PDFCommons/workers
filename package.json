@@ -13,7 +13,8 @@
     "./raster": "./src/raster.ts",
     "./resize": "./src/resize.ts",
     "./text": "./src/text.ts",
-    "./two-up": "./src/two-up.ts"
+    "./two-up": "./src/two-up.ts",
+    "./flatten": "./src/flatten.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
