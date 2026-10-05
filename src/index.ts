@@ -34,6 +34,37 @@ export async function splitPdf(input: Uint8Array): Promise<Uint8Array[]> {
   return parts;
 }
 
+/** Each inclusive 1-based range becomes one PDF, in the order given. */
+export async function extractPdfRanges(
+  input: Uint8Array,
+  ranges: readonly { start: number; end: number }[],
+): Promise<Uint8Array[]> {
+  if (ranges.length === 0) throw new Error("Name a page that exists.");
+  const doc = await load(input);
+  const total = doc.getPageCount();
+  if (total === 0) throw new Error("This PDF has no pages.");
+  const parts: Uint8Array[] = [];
+  for (const range of ranges) {
+    if (
+      !Number.isInteger(range.start) ||
+      !Number.isInteger(range.end) ||
+      range.start < 1 ||
+      range.end > total ||
+      range.end < range.start ||
+      range.end - range.start > 500
+    ) {
+      throw new Error("Name a page that exists.");
+    }
+    const out = await PDFDocument.create();
+    const indexes: number[] = [];
+    for (let page = range.start; page <= range.end; page += 1) indexes.push(page - 1);
+    const copied = await out.copyPages(doc, indexes);
+    for (const page of copied) out.addPage(page);
+    parts.push(await out.save());
+  }
+  return parts;
+}
+
 export type QuarterTurn = 0 | 90 | 180 | 270;
 
 function isQuarterTurn(value: number): value is QuarterTurn {

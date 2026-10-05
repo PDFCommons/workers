@@ -4,6 +4,7 @@ import { PDFDocument, degrees } from "pdf-lib";
 import {
   compressPdf,
   deletePdfPages,
+  extractPdfRanges,
   mergePdfs,
   organizePdf,
   pageCount,
@@ -35,6 +36,27 @@ describe("workers", () => {
     const parts = await splitPdf(await blank(3));
     assert.equal(parts.length, 3);
     for (const part of parts) assert.equal(await pageCount(part), 1);
+  });
+
+  it("extracts inclusive ranges and refuses a page that is not there", async () => {
+    const src = await PDFDocument.create();
+    src.addPage([100, 40]);
+    src.addPage([200, 40]);
+    src.addPage([300, 40]);
+    const bytes = await src.save();
+    const parts = await extractPdfRanges(bytes, [
+      { start: 1, end: 2 },
+      { start: 3, end: 3 },
+    ]);
+    assert.equal(parts.length, 2);
+    const first = await PDFDocument.load(parts[0]!);
+    const second = await PDFDocument.load(parts[1]!);
+    assert.equal(first.getPageCount(), 2);
+    assert.equal(first.getPage(0).getWidth(), 100);
+    assert.equal(first.getPage(1).getWidth(), 200);
+    assert.equal(second.getPage(0).getWidth(), 300);
+    await assert.rejects(() => extractPdfRanges(bytes, [{ start: 1, end: 4 }]), /page that exists/);
+    await assert.rejects(() => extractPdfRanges(bytes, []), /page that exists/);
   });
 
   it("rotates every page", async () => {
