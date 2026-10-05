@@ -7,7 +7,8 @@
   "description": "In-browser PDF tools. Files stay in the tab. This package does not upload.",
   "exports": {
     ".": "./src/index.ts",
-    "./raster": "./src/raster.ts"
+    "./raster": "./src/raster.ts",
+    "./text": "./src/text.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
