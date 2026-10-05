@@ -7,6 +7,7 @@
   "description": "In-browser PDF tools. Files stay in the tab. This package does not upload.",
   "exports": {
     ".": "./src/index.ts",
+    "./blank": "./src/blank.ts",
     "./raster": "./src/raster.ts",
     "./text": "./src/text.ts"
   },
