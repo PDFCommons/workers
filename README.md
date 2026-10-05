@@ -2,6 +2,8 @@
 
 In-browser PDF tools for [PDF Commons](https://www.pdfcommons.com). MIT.
 
+Commits in this repository are authored as PDF Commons <workers@pdfcommons.com>.
+
 Merge, split, rotate, reorder, delete pages, JPEG/PNG to PDF, PDF to JPEG/PNG, basic compress, password protect, unlock, PDF to text, add blank page, crop, remove metadata, resize, two-up, flatten, reverse, scale, and annotation removal run on bytes you pass in. Page rasterizing draws each page in the caller-supplied canvas. Unlock only removes a password the caller supplies. This package does not guess passwords and does not upload the file.
 
 ```bash
