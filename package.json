@@ -6,13 +6,19 @@
   "license": "MIT",
   "description": "In-browser PDF tools. Files stay in the tab. This package does not upload.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./raster": "./src/raster.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
   },
   "dependencies": {
     "@neslinesli93/qpdf-wasm": "0.3.0",
-    "pdf-lib": "^1.17.1"
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "6.4.299"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.10"
   }
 }
