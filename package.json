@@ -39,7 +39,8 @@
     "./swap": "./src/swap.ts",
     "./blank-every": "./src/blank-every.ts",
     "./one-page": "./src/one-page.ts",
-    "./core": "./src/core/pdf.ts"
+    "./core": "./src/core/pdf.ts",
+    "./split-vertical": "./src/split-vertical.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"

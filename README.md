@@ -74,6 +74,7 @@ Page numbers are 1-based unless a function says otherwise. These functions throw
 | `@pdfcommons/workers/swap` | `swapPdfPages` | Exchanges two pages. The same page twice is refused. |
 | `@pdfcommons/workers/blank-every` | `blankEveryN` | Inserts a blank of the same media-box size after every Nth page. |
 | `@pdfcommons/workers/one-page` | `onePagePdfs` | A zip of `page-1.pdf` onward, one page in each file. |
+| `@pdfcommons/workers/split-vertical` | `splitVerticalPdf` | Cuts each page at the vertical midpoint of its media box, left half then right. |
 | `@pdfcommons/workers/blank` | `addBlankPage` | Inserts one blank. `0` means in front of page 1. |
 | `@pdfcommons/workers/crop` | `cropPdf` | Insets the crop box. The content outside the box stays in the file. |
 | `@pdfcommons/workers/metadata` | `removePdfMetadata` | Clears info-dictionary keys and the catalog metadata stream. |
