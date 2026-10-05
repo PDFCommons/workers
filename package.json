@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./blank": "./src/blank.ts",
     "./crop": "./src/crop.ts",
+    "./metadata": "./src/metadata.ts",
     "./raster": "./src/raster.ts",
     "./text": "./src/text.ts"
   },
