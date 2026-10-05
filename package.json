@@ -27,7 +27,8 @@
     "./orient": "./src/orient.ts",
     "./delete-page": "./src/delete-page.ts",
     "./bookmarks": "./src/bookmarks.ts",
-    "./keep-range": "./src/keep-range.ts"
+    "./keep-range": "./src/keep-range.ts",
+    "./rotate90": "./src/rotate90.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test src/*.test.ts"
