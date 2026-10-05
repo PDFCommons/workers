@@ -10,6 +10,7 @@ import {
 } from "pdf-lib";
 import {
   addPageNumbers,
+  addWatermark,
   compressPdf,
   deletePdfPages,
   extractPdfRanges,
@@ -28,6 +29,33 @@ async function blank(pages: number): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < pages; i++) doc.addPage();
   return doc.save();
+}
+
+async function contentText(bytes: Uint8Array): Promise<string> {
+  const doc = await PDFDocument.load(bytes);
+  const page = doc.getPage(0);
+  const streams: PDFRawStream[] = [];
+  const push = (value: unknown) => {
+    if (value instanceof PDFRawStream) streams.push(value);
+    else if (value instanceof PDFArray) {
+      for (let index = 0; index < value.size(); index += 1) {
+        push(doc.context.lookup(value.get(index)));
+      }
+    }
+  };
+  push(page.node.Contents());
+  const decoded = streams
+    .map((stream) => new TextDecoder("latin1").decode(decodePDFRawStream(stream).decode()))
+    .join("\n");
+  return decoded.replace(/<([0-9A-Fa-f\s]+)>/g, (_match, hex: string) => {
+    const compact = hex.replace(/\s+/g, "");
+    if (compact.length % 2 !== 0) return `<${hex}>`;
+    let text = "";
+    for (let index = 0; index < compact.length; index += 2) {
+      text += String.fromCharCode(parseInt(compact.slice(index, index + 2), 16));
+    }
+    return text;
+  });
 }
 
 function pageStream(doc: PDFDocument, index: number): string {
@@ -223,5 +251,32 @@ describe("workers", () => {
   it("does not unlock when the password is wrong", async () => {
     const protectedBytes = await protectPdf(await blank(1), "right");
     await assert.rejects(() => unlockPdf(protectedBytes, "wrong"), /did not open/);
+  });
+
+  it("rejects an empty watermark", async () => {
+    const input = await blank(1);
+    await assert.rejects(() => addWatermark(input, ""), /Enter the watermark text\./);
+    await assert.rejects(() => addWatermark(input, "   "), /Enter the watermark text\./);
+  });
+
+  it("rejects a watermark longer than 80 characters", async () => {
+    const input = await blank(1);
+    await assert.rejects(
+      () => addWatermark(input, "N".repeat(81)),
+      /Use 80 characters or fewer\./,
+    );
+  });
+
+  it("stamps NORTH once on a one-page pdf", async () => {
+    const out = await addWatermark(await blank(1), "  NORTH  ");
+    const doc = await PDFDocument.load(out);
+    assert.equal(doc.getPageCount(), 1);
+    assert.match(await contentText(out), /NORTH/);
+  });
+
+  it("rejects a pdf with no pages", async () => {
+    const doc = await PDFDocument.create();
+    const input = await doc.save({ addDefaultPage: false });
+    await assert.rejects(() => addWatermark(input, "NORTH"), /This PDF has no pages\./);
   });
 });

@@ -211,6 +211,39 @@ export async function organizePdf(
   return current;
 }
 
+const WATERMARK_DEGREES = -32;
+
+/** Stamps `text` once, centered, on every page. No image and no network. */
+export async function addWatermark(input: Uint8Array, text: string): Promise<Uint8Array> {
+  const words = text.trim();
+  if (words.length === 0) throw new Error("Enter the watermark text.");
+  if (words.length > 80) throw new Error("Use 80 characters or fewer.");
+  const doc = await load(input);
+  if (doc.getPageCount() === 0) throw new Error("This PDF has no pages.");
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const color = rgb(0.55, 0.51, 0.45);
+  for (const page of doc.getPages()) {
+    const { width, height } = page.getSize();
+    const size = Math.min(72, Math.max(18, Math.min(width, height) * 0.18));
+    const textWidth = font.widthOfTextAtSize(words, size);
+    // The text matrix turns around the baseline start. Shift that point so the glyph center lands on the page center.
+    const rise = font.heightAtSize(size, { descender: false }) / 2;
+    const radians = (WATERMARK_DEGREES * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    page.drawText(words, {
+      x: width / 2 - cos * (textWidth / 2) + sin * rise,
+      y: height / 2 - sin * (textWidth / 2) - cos * rise,
+      size,
+      font,
+      color,
+      opacity: 0.35,
+      rotate: degrees(WATERMARK_DEGREES),
+    });
+  }
+  return doc.save();
+}
+
 export async function addPageNumbers(
   input: Uint8Array,
   options?: { startAt?: number },
