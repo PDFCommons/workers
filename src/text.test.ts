@@ -6,7 +6,7 @@ import { DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
 import { PDFDocument } from "pdf-lib";
 
 import { protectPdf } from "./index.ts";
-import { pdfToText } from "./text.ts";
+import { isNoTextError, NoTextError, pdfToText } from "./text.ts";
 
 if (!globalThis.DOMMatrix) globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix;
 if (!globalThis.ImageData) globalThis.ImageData = ImageData as unknown as typeof globalThis.ImageData;
@@ -32,14 +32,17 @@ describe("pdfToText", () => {
     assert.ok(text.includes("Hello\n\nSecond") || (hello < gap && gap < second));
   });
 
-  it("refuses a blank page", async () => {
+  it("refuses a blank page with a coded no-text error", async () => {
     const doc = await PDFDocument.create();
     doc.addPage();
     const bytes = await doc.save();
     await assert.rejects(
       () => pdfToText(bytes),
       (error: unknown) => {
-        assert.ok(error instanceof Error);
+        assert.ok(error instanceof NoTextError);
+        assert.equal(error.code, "no-text");
+        assert.equal(error.name, "NoTextError");
+        assert.equal(isNoTextError(error), true);
         assert.equal(
           error.message,
           "This PDF has no text layer. A scan needs OCR, which this page does not do.",
@@ -47,6 +50,14 @@ describe("pdfToText", () => {
         return true;
       },
     );
+  });
+
+  it("tells a no-text error from other errors", () => {
+    assert.equal(isNoTextError(new Error("This PDF could not be read.")), false);
+    assert.equal(isNoTextError(null), false);
+    assert.equal(isNoTextError("no-text"), false);
+    // A copy of the class from another bundle still carries the code.
+    assert.equal(isNoTextError(Object.assign(new Error("x"), { code: "no-text" })), true);
   });
 
   it("refuses empty bytes", async () => {

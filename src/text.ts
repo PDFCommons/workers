@@ -3,6 +3,23 @@ const PROTECTED = "This PDF is protected. Unlock it in this tab first.";
 const NO_PAGES = "This PDF has no pages.";
 const NO_TEXT = "This PDF has no text layer. A scan needs OCR, which this page does not do.";
 
+/**
+ * The PDF opened, but no page has text to select: usually a scan or a photo.
+ * Callers check `code` (or `isNoTextError`) to show their own message.
+ */
+export class NoTextError extends Error {
+  readonly code = "no-text";
+  constructor() {
+    super(NO_TEXT);
+    this.name = "NoTextError";
+  }
+}
+
+/** True for a `NoTextError`, also when the class came from another copy of this package. */
+export function isNoTextError(error: unknown): error is NoTextError {
+  return error instanceof Error && (error as { code?: unknown }).code === "no-text";
+}
+
 type PdfjsModule = {
   getDocument: (params: Record<string, unknown>) => {
     promise: Promise<PdfDocument>;
@@ -45,6 +62,7 @@ async function loadPdfjs(): Promise<PdfjsModule> {
 }
 
 function readableError(error: unknown): Error {
+  if (isNoTextError(error)) return error;
   const message = error instanceof Error ? error.message : "";
   const name = error instanceof Error ? error.name : "";
   if (/password|encrypted/i.test(message) || /password/i.test(name)) {
@@ -112,7 +130,7 @@ export async function pdfToText(input: Uint8Array): Promise<string> {
       }
     }
     const text = pages.join("\n\n");
-    if (text.trim() === "") throw new Error(NO_TEXT);
+    if (text.trim() === "") throw new NoTextError();
     return text;
   } catch (error) {
     throw readableError(error);
